@@ -159,16 +159,14 @@ const getAllProperties = (options, limit = 10) => {
   JOIN property_reviews ON properties.id = property_id
   `;
 
-  if (options.owner_id) {
-    queryParams.push(`${options.owner_id}`);
-    querString += `WHERE properties.owner_id = $${queryParams.length}`;
-  }
-
   if (options.city) {
     queryParams.push(`%${options.city}%`);
     querString += `WHERE properties.city LIKE $${queryParams.length}`;
   }
-
+  if (options.owner_id) {
+    queryParams.push(options.owner_id);
+    querString += `AND properties.owner_id = $${queryParams.length}`;
+  }
   if (options.minimum_price_per_night && options.maximum_price_per_night) {
     queryParams.push(options.minimum_price_per_night);
     querString += `AND properties.cost_per_night / 100 >= $${queryParams.length} `;
@@ -208,10 +206,65 @@ const getAllProperties = (options, limit = 10) => {
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  // const propertyId = Object.keys(properties).length + 1;
+  // property.id = propertyId;
+  // properties[propertyId] = property;
+  // return Promise.resolve(property);
+
+  const {
+    owner_id,
+    title,
+    description,
+    thumbnail_photo_url,
+    cover_photo_url,
+    cost_per_night,
+    street,
+    city,
+    province,
+    post_code,
+    country,
+    parking_spaces,
+    number_of_bathrooms,
+    number_of_bedrooms,
+  } = property;
+  const result = pool
+    .query(
+      `INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, street, city, province, 
+        post_code,
+        country,
+        parking_spaces,
+        number_of_bathrooms,
+        number_of_bedrooms) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *
+  `,
+      [
+        owner_id,
+        title,
+        description,
+        thumbnail_photo_url,
+        cover_photo_url,
+        cost_per_night,
+        street,
+        city,
+        province,
+        post_code,
+        country,
+        parking_spaces,
+        number_of_bathrooms,
+        number_of_bedrooms,
+      ]
+    )
+    .then((response) => {
+      const property = response.rows[0];
+      console.log(property);
+      // if (!user) return null;
+
+      return Promise.resolve(property);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
+  return result;
 };
 
 module.exports = {
